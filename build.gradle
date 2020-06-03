@@ -1,0 +1,143 @@
+buildscript {
+    repositories {
+        maven { url = 'https://files.minecraftforge.net/maven' }
+        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
+    }
+}
+apply plugin: 'net.minecraftforge.gradle.forge'
+// Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
+apply plugin: 'maven-publish'
+apply plugin: "java"
+
+version = "1.12.2-1.0.0"
+group = "com.fffxc2.modularaugment"
+archivesBaseName = "Modular Augment"
+
+sourceCompatibility = targetCompatibility = '1.8'
+compileJava {
+    sourceCompatibility = targetCompatibility = '1.8'
+}
+
+minecraft {
+    version = "1.12.2-14.23.5.2800"
+    runDir = "run"
+    useDepAts = true
+
+    mappings = "snapshot_20171003"
+}
+
+repositories {
+    maven {
+        // for rf stuffs
+        url = "https://maven.covers1624.net"
+    }
+
+    maven {
+        // location of the maven that hosts JEI files
+        url = "http://dvs1.progwml6.com/files/maven"
+    }
+
+    maven {
+        // CraftTweaker
+        url "https://maven.blamejared.com/"
+    }
+
+    maven {
+        // Curseforge
+        url "https://minecraft.curseforge.com/api/maven"
+    }
+
+    maven {
+        // Modular Machinery
+        url "https://maven.hellfiredev.net"
+    }
+}
+
+dependencies {
+    // These all target the same as modulary machinery
+    def mc_version = "1.12.2"
+    def jei_version = "4.14.4.267"
+
+    ////JEI stuff
+    deobfCompile "mezz.jei:jei_${mc_version}:${jei_version}"
+
+    def rf_version = "2.1.0.7"
+
+    deobfCompile "cofh:RedstoneFlux:1.12-${rf_version}:universal"
+
+    def ct_mc_version = "MC1120"
+    def ct_version = "4.1.14.520"
+
+    deobfCompile "CraftTweaker2:CraftTweaker2-${ct_mc_version}-Main:1.12-${ct_version}"
+    deobfCompile "hellfirepvp.modularmachinery:modularmachinery:1.12.2-1.11.1-v53"
+
+}
+
+task deobfJar(type: Jar) {
+    from(sourceSets.main.output)
+    archiveName = "${baseName}-${version}-deobf.${extension}"
+}
+
+task srcJar(type: Jar) {
+    from(sourceSets.main.java)
+    classifier = 'sources'
+    archiveName = "${baseName}-${version}-sources.${extension}"
+}
+
+artifacts {
+    archives deobfJar, srcJar
+}
+
+jar {
+    manifest {
+        attributes([
+                "Specification-Title": "modularaugment",
+                "Specification-Vendor": "fffxc2",
+                "Specification-Version": "1", // We are version 1 of ourselves
+                "Implementation-Title": project.name,
+                "Implementation-Version": "${version}",
+                "Implementation-Vendor" :"fffxv2",
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+}
+
+// Example configuration to allow publishing using the maven-publish task
+// This is the preferred method to reobfuscate your jar file
+jar.finalizedBy('reobfJar')
+// However if you are in a multi-project build, dev time needs unobfed jar files, so you can delay the obfuscation until publishing by doing
+//publish.dependsOn('reobfJar')
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact jar
+        }
+    }
+    repositories {
+        maven {
+            url "file:///${project.projectDir}/mcmodsrepo"
+        }
+    }
+}
+
+processResources {
+    inputs.property "version", project.version
+    inputs.property "mcversion", project.minecraft.version
+
+    from(sourceSets.main.resources.srcDirs) {
+        include 'mcmod.info'
+
+        expand 'version':project.version, 'mcversion': "1.12"
+    }
+
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'mcmod.info'
+    }
+}
+
+idea { module { inheritOutputDirs = true } }
