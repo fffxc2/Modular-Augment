@@ -1,0 +1,16 @@
+[
+    {
+        "modid": "modularaugment",
+        "name": "Modular Augment",
+        "description": "An expansion to Modular Machinery that adds extra types for recipe definitions",
+        "version": "${version}",
+        "mcversion": "${mcversion}",
+        "url": "https://www.curseforge.com/minecraft/mc-mods/modular-augment",
+        "updateUrl": "",
+        "authorList": [ "fffxc2" ],
+        "credits": "fffxc2",
+        "logoFile": "assets/modularaugment/textures/logo.png",
+        "screenshots": [],
+        "dependencies": []
+    }
+]
