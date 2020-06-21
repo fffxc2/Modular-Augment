@@ -25,28 +25,17 @@ import java.util.Optional;
 
 import static hellfirepvp.modularmachinery.common.machine.IOType.INPUT;
 
-public class RequirementDeferredFluid extends ComponentRequirement.PerTick<HybridFluid, RequirementTypeDeferredFluid> {
-    public static RequirementTypeDeferredFluid REQUIREMENT_TYPE_DEFERRED_FLUID;
+public class RequirementDeferredFluid extends ComponentRequirement.PerTick<HybridFluid, RequirementTypeDeferred<HybridFluid, RequirementDeferredFluid>> {
+    public static RequirementTypeDeferred<HybridFluid, RequirementDeferredFluid> REQUIREMENT_TYPE_DEFERRED_FLUID;
     public final HybridFluid required;
-    private HybridFluid requirementCheck;
 
     private NBTTagCompound tagMatch = null, tagDisplay = null;
 
     private ProcessingComponent<?> fluidLocation;
 
-    public RequirementDeferredFluid(IOType ioType, FluidStack fluid) {
-        this(REQUIREMENT_TYPE_DEFERRED_FLUID, ioType, new HybridFluid(fluid));
-    }
-
-    private RequirementDeferredFluid(RequirementTypeDeferredFluid type, IOType ioType, HybridFluid required) {
-        super(type, ioType);
+    public RequirementDeferredFluid(HybridFluid required) {
+        super(REQUIREMENT_TYPE_DEFERRED_FLUID, INPUT);
         this.required = required.copy();
-        this.requirementCheck = this.required.copy();
-    }
-
-    @net.minecraftforge.fml.common.Optional.Method(modid = "mekanism")
-    public static RequirementDeferredFluid createMekanismGasRequirement(RequirementTypeDeferredFluid type, IOType ioType, GasStack gasStack) {
-        return new RequirementDeferredFluid(type, ioType, new HybridFluidGas(gasStack));
     }
 
     @Override
@@ -55,18 +44,18 @@ public class RequirementDeferredFluid extends ComponentRequirement.PerTick<Hybri
     }
 
     @Override
-    public ComponentRequirement<HybridFluid, RequirementTypeDeferredFluid> deepCopy() {
-        RequirementDeferredFluid fluid = new RequirementDeferredFluid(this.getRequirementType(), this.getActionType(), this.required.copy());
+    public ComponentRequirement<HybridFluid, RequirementTypeDeferred<HybridFluid, RequirementDeferredFluid>> deepCopy() {
+        RequirementDeferredFluid fluid = new RequirementDeferredFluid(this.required.copy());
         fluid.tagMatch = getTagMatch();
         fluid.tagDisplay = getTagDisplay();
         return fluid;
     }
 
     @Override
-    public ComponentRequirement<HybridFluid, RequirementTypeDeferredFluid> deepCopyModified(List<RecipeModifier> modifiers) {
+    public ComponentRequirement<HybridFluid, RequirementTypeDeferred<HybridFluid, RequirementDeferredFluid>> deepCopyModified(List<RecipeModifier> modifiers) {
         HybridFluid hybrid = this.required.copy();
         hybrid.setAmount(Math.round(RecipeModifier.applyModifiers(modifiers, this, hybrid.getAmount(), false)));
-        RequirementDeferredFluid fluid = new RequirementDeferredFluid(this.getRequirementType(), this.getActionType(), hybrid);
+        RequirementDeferredFluid fluid = new RequirementDeferredFluid(hybrid);
 
         fluid.tagMatch = getTagMatch();
         fluid.tagDisplay = getTagDisplay();
@@ -76,10 +65,10 @@ public class RequirementDeferredFluid extends ComponentRequirement.PerTick<Hybri
     @Override
     public JEIComponent<HybridFluid> provideJEIComponent() {
         // This might be wrong if we are working with a gas
-        RequirementFluid output = new RequirementFluid(INPUT, this.requirementCheck.copy().asFluidStack());
+        RequirementFluid output = new RequirementFluid(INPUT, this.required.copy().asFluidStack());
         // If we have Mekanism and this needs a gas, make sure the RequirementFluid is a gas RequirementFluid
-        if(Mods.MEKANISM.isPresent() && this.requirementCheck instanceof HybridFluidGas) {
-            output = RequirementFluid.createMekanismGasRequirement(RequirementTypesMM.REQUIREMENT_GAS, INPUT, ((HybridFluidGas)this.requirementCheck.copy()).asGasStack());
+        if(Mods.MEKANISM.isPresent() && this.required instanceof HybridFluidGas) {
+            output = RequirementFluid.createMekanismGasRequirement(RequirementTypesMM.REQUIREMENT_GAS, INPUT, ((HybridFluidGas)this.required.copy()).asGasStack());
         }
         return new JEIComponentHybridFluid(output);
     }
@@ -121,9 +110,11 @@ public class RequirementDeferredFluid extends ComponentRequirement.PerTick<Hybri
     @Nonnull
     @Override
     public String getMissingComponentErrorMessage(IOType ioType) {
-        ResourceLocation compKey = this.getRequirementType().getRegistryName();
-        return String.format("component.missing.%s.%s.%s",
-                compKey.getResourceDomain(), compKey.getResourcePath(), ioType.name().toLowerCase());
+        // TODO: Support localization
+        if (Mods.MEKANISM.isPresent() && this.required instanceof HybridFluidGas) {
+            return "Missing deferred gas input";
+        }
+        return "Missing deferred fluid input";
     }
 
     @Override
@@ -136,26 +127,26 @@ public class RequirementDeferredFluid extends ComponentRequirement.PerTick<Hybri
 
     private boolean validFluidState(ProcessingComponent<?> component, RecipeCraftingContext context) {
         HybridTank handler = (HybridTank) component.getProvidedComponent();
-        FluidStack drained = handler.drainInternal(this.requirementCheck.copy().asFluidStack(), false);
+        FluidStack drained = handler.drainInternal(this.required.copy().asFluidStack(), false);
         if (drained == null) {
             return false;
         }
-        return this.requirementCheck.getAmount() <= drained.amount;
+        return this.required.getAmount() <= drained.amount;
     }
 
     @net.minecraftforge.fml.common.Optional.Method(modid = "mekanism")
     private Optional<Boolean> valueFluidStateWithMekanism(ProcessingComponent<?> component, RecipeCraftingContext context, HybridTank handler) {
         if(handler instanceof HybridGasTank) {
             HybridGasTank gasTank = (HybridGasTank) handler;
-            if(this.requirementCheck instanceof HybridFluidGas) {
-                GasStack drained = gasTank.drawGas(EnumFacing.UP, this.requirementCheck.getAmount(), false);
+            if(this.required instanceof HybridFluidGas) {
+                GasStack drained = gasTank.drawGas(EnumFacing.UP, this.required.getAmount(), false);
                 if(drained == null) {
                     return Optional.of(false);
                 }
-                if(drained.getGas() != ((HybridFluidGas) this.requirementCheck).asGasStack().getGas()) {
+                if(drained.getGas() != ((HybridFluidGas) this.required).asGasStack().getGas()) {
                     return Optional.of(false);
                 }
-                return Optional.of(this.requirementCheck.getAmount() <= drained.amount);
+                return Optional.of(this.required.getAmount() <= drained.amount);
             }
         }
         return Optional.empty();
@@ -200,7 +191,7 @@ public class RequirementDeferredFluid extends ComponentRequirement.PerTick<Hybri
             }
         }
 
-        handler.drainInternal(this.requirementCheck.copy().asFluidStack(), true);
+        handler.drainInternal(this.required.copy().asFluidStack(), true);
         return CraftCheck.success();
     }
 
@@ -208,9 +199,9 @@ public class RequirementDeferredFluid extends ComponentRequirement.PerTick<Hybri
     @net.minecraftforge.fml.common.Optional.Method(modid = "mekanism")
     @Nonnull
     private Optional<CraftCheck> finishWithMekanismHandling(HybridTank handler, RecipeCraftingContext context, ResultChance chance) {
-        if (this.requirementCheck instanceof HybridFluidGas && handler instanceof HybridGasTank) {
+        if (this.required instanceof HybridFluidGas && handler instanceof HybridGasTank) {
             HybridGasTank gasHandler = (HybridGasTank) handler;
-            gasHandler.drawGas(EnumFacing.UP, this.requirementCheck.getAmount(), true);
+            gasHandler.drawGas(EnumFacing.UP, this.required.getAmount(), true);
             return Optional.of(CraftCheck.success());
         }
         return Optional.empty();
@@ -224,7 +215,7 @@ public class RequirementDeferredFluid extends ComponentRequirement.PerTick<Hybri
     @Nonnull
     @Override
     public CraftCheck resetIOTick(RecipeCraftingContext context) {
-        if(Mods.MEKANISM.isPresent() && this.requirementCheck instanceof HybridFluidGas) {
+        if(Mods.MEKANISM.isPresent() && this.required instanceof HybridFluidGas) {
             return (this.fluidLocation != null) ? CraftCheck.success() : CraftCheck.failure("craftcheck.failure.gas.input");
         }
         return (this.fluidLocation != null) ? CraftCheck.success() : CraftCheck.failure("craftcheck.failure.fluid.input");

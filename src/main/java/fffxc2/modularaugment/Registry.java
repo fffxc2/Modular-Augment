@@ -1,7 +1,6 @@
 package fffxc2.modularaugment;
 
-import fffxc2.modularaugment.components.requirements.RequirementTypeDeferredFluid;
-import fffxc2.modularaugment.components.requirements.RequirementTypeDeferredItem;
+import fffxc2.modularaugment.components.requirements.RequirementTypeDeferred;
 import hellfirepvp.modularmachinery.common.crafting.requirement.type.RequirementType;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.event.RegistryEvent;
@@ -16,14 +15,10 @@ public class Registry {
             return;
         }
 
-        ResourceLocation itemRegistryName = new ResourceLocation(ModularAugment.MODID,"deferred-item");
-        RequirementTypeDeferredItem deferredItem = new RequirementTypeDeferredItem();
-        deferredItem.setRegistryName(itemRegistryName);
-        event.getRegistry().register(deferredItem);
-
-        ResourceLocation fluidRegistryName = new ResourceLocation(ModularAugment.MODID,"deferred-fluid");
-        RequirementTypeDeferredFluid deferredFluid = new RequirementTypeDeferredFluid();
-        deferredFluid.setRegistryName(fluidRegistryName);
-        event.getRegistry().register(deferredFluid);
+        // Generic registry for all deferred types
+        ResourceLocation registryName = new ResourceLocation(ModularAugment.MODID,"deferred");
+        RequirementTypeDeferred deferred = new RequirementTypeDeferred();
+        deferred.setRegistryName(registryName);
+        event.getRegistry().register(deferred);
     }
 }

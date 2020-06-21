@@ -12,13 +12,12 @@ import hellfirepvp.modularmachinery.common.util.ItemUtils;
 import hellfirepvp.modularmachinery.common.util.ResultChance;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.ResourceLocation;
 import javax.annotation.Nonnull;
 import java.util.List;
 import static hellfirepvp.modularmachinery.common.machine.IOType.INPUT;
 
-public class RequirementDeferredItem extends ComponentRequirement.PerTick<ItemStack, RequirementTypeDeferredItem> {
-    private static RequirementTypeDeferredItem REQUIREMENT_TYPE_DEFERRED_ITEM;
+public class RequirementDeferredItem extends ComponentRequirement.PerTick<ItemStack, RequirementTypeDeferred<ItemStack, RequirementDeferredItem>> {
+    private static RequirementTypeDeferred<ItemStack, RequirementDeferredItem> REQUIREMENT_TYPE_DEFERRED_ITEM;
     public final RequirementItem.ItemRequirementType requirementType;
 
     public final ItemStack required;
@@ -48,7 +47,7 @@ public class RequirementDeferredItem extends ComponentRequirement.PerTick<ItemSt
     }
 
     @Override
-    public ComponentRequirement<ItemStack, RequirementTypeDeferredItem> deepCopy() {
+    public ComponentRequirement<ItemStack, RequirementTypeDeferred<ItemStack, RequirementDeferredItem>> deepCopy() {
         RequirementDeferredItem item;
         switch (this.requirementType) {
             case OREDICT:
@@ -69,7 +68,7 @@ public class RequirementDeferredItem extends ComponentRequirement.PerTick<ItemSt
     }
 
     @Override
-    public ComponentRequirement<ItemStack, RequirementTypeDeferredItem> deepCopyModified(List<RecipeModifier> modifiers) {
+    public ComponentRequirement<ItemStack, RequirementTypeDeferred<ItemStack, RequirementDeferredItem>> deepCopyModified(List<RecipeModifier> modifiers) {
         RequirementDeferredItem item;
         switch (this.requirementType) {
             case OREDICT:
@@ -130,9 +129,8 @@ public class RequirementDeferredItem extends ComponentRequirement.PerTick<ItemSt
     @Nonnull
     @Override
     public String getMissingComponentErrorMessage(IOType ioType) {
-        ResourceLocation compKey = this.getRequirementType().getRegistryName();
-        return String.format("component.missing.%s.%s.%s",
-                compKey.getResourceDomain(), compKey.getResourcePath(), ioType.name().toLowerCase());
+        // TODO: Support localization
+        return "Missing deferred item input";
     }
 
     private boolean validItemState(ProcessingComponent<?> component, RecipeCraftingContext context) {
